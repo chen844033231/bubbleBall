@@ -74,25 +74,83 @@ const createStage = function () {
 
 // start here
 ~function() {
+    let mouseX = 0
+    let mouseY = 0
     const stage = createStage()
     const world = new World(stage.ctx, stage.width, stage.height)
-
+    const redMap = new Image()
+    const blueMap = new Image()
+    redMap.src = './red.png'
+    blueMap.src = './blue.png'
+    const createBubble = function(option) {
+        option = option || {}
+        return new Bubble(Object.assign({
+            x: Math.random() * world.width,
+            y: Math.random() * world.height,
+            r: Math.random() * 50,
+            speed: {x: rand(-2, 2), y: rand(-2, 2)},
+            color: '#00ff00',
+            map: blueMap,
+        }, option))
+    }
+    const redBubble = createBubble({
+        x: world.width / 2,
+        y: world.height / 2,
+        r: 30,
+        color: '#ff0000',
+        map: redMap,
+    })
     world.init(function() {
+        world.add(redBubble)
         // init 10 bubble
-        for(let i = 0; i < 10; i++) {
-            world.add(new Bubble({
-                x: Math.random() * world.width,
-                y: Math.random() * world.height,
-                r: Math.random() * 100,
-                speed: [rand(-5, 5), rand(-5, 5)],
-                color: `rgb(${rand(255)}, ${rand(255)}, ${rand(255)})`,
-            }))
+        for(let i = 0; i < 20; i++) {
+            world.add(createBubble())
         }
     })
 
     world.update(function() {
-        world.objects.forEach(bubble => bubble.move())
+        redBubble.track({x: mouseX, y: mouseY})
+        redBubble.range({x: 0, y: 0, x1: world.width, y1: world.height})
+        world.objects.forEach(bubble => {
+            if (bubble !== redBubble) {
+                if(bubble.lifeTime < bubble.maxLifeTime) {
+                    bubble.move()
+                } else {
+                    world.remove(bubble)
+                    world.objects.push(createBubble())
+                }
+
+                // hit bubble
+                if (Bubble.hitBubble(redBubble, bubble)) {
+                    if (redBubble.speed.x * bubble.speed.x < 0) {
+                        bubble.speed.x *= -1.2
+                        redBubble.speed.x *= -0.8
+                    } else if (redBubble.speed.x * bubble.speed.x === 0) {
+                        bubble.speed.x = redBubble.speed.x * 0.8
+                        redBubble.speed.x *= -0.8
+                    } else {
+                        bubble.speed.x *= 1.2
+                        redBubble.speed.x *= 0.8
+                    }
+                    if (redBubble.speed.y * bubble.speed.y < 0) {
+                        bubble.speed.y *= -1.2
+                        redBubble.speed.y *= -0.8
+                    } else if (redBubble.speed.y * bubble.speed.y === 0) {
+                        bubble.speed.y = redBubble.speed.y * 0.8
+                        redBubble.speed.y *= -0.8
+                    } else {
+                        bubble.speed.y *= 1.2
+                        redBubble.speed.y *= 0.8
+                    }
+                }
+            }
+        })
     })
 
     world.start()
+
+    window.addEventListener('mousemove', (e) => {
+        mouseX = e.pageX
+        mouseY = e.pageY
+    }, false)
 }()
